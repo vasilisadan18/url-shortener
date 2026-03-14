@@ -20,16 +20,8 @@ URL Shortener Service
 * Статистика переходов — количество кликов, дата последнего использования
 * Docker-контейнеризация — лёгкий запуск одной командой
 
- Технологический стек
-Компонент	                    Технология
-Web-фреймворк	                 FastAPI
-База данных	                   PostgreSQL
-Кэширование	                     Redis
-Аутентификация	            JWT (python-jose)
-Хеширование паролей	        passlib + bcrypt
-ORM	                           SQLAlchemy
-Валидация	                    Pydantic
-Контейнеризация	          Docker + Docker Compose
+Развернутый сервис на Railway:  https://url-shortener-production-27de.up.railway.app
+Документация: https://url-shortener-production-27de.up.railway.app/docs
 
 Запуск через Docker: 
 
@@ -237,31 +229,10 @@ json
     "clicks": 0
   }
 ]
-
-
-Структура базы данных
-Таблица users
-Поле	                  Тип	                  Описание
-id	                      UUID	                 Первичный ключ
-email	                  String	             Уникальный email
-username	              String	             Уникальное имя пользователя
-hashed_password	          String	             Хеш пароля
-is_active	              Boolean	             Активен ли пользователь
-created_at	              Timestamp	             Дата регистрации
-
-Таблица links
-Поле	                  Тип	                  Описание
-id	                      UUID	                  Первичный ключ
-short_code	              String	              Уникальный короткий код
-original_url	          String	              Оригинальный URL
-custom_alias	          String	              Кастомный алиас (опционально)
-clicks	                  Integer	              Количество переходов
-created_at	              Timestamp		          Дата создания
-updated_at	              Timestamp		          Дата последнего обновления
-last_accessed_at	      Timestamp			      Дата последнего перехода
-expires_at	              Timestamp			      Дата истечения (опционально)
-is_active	              Boolean			      Активна ли ссылка
-user_id	                  UUID			          Внешний ключ к users
+Логи:
+![](<Снимок экрана (275).png>)
+![](<Снимок экрана (276).png>)
+![](<Снимок экрана (277).png>)
 
 Кэширование (Redis)
 - Популярные ссылки кэшируются на 1 час
