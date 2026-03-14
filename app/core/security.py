@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from core.config import settings
+from app.core.config import settings
 
 pwd_context = CryptContext(
     schemes=["bcrypt"],
@@ -12,6 +12,8 @@ pwd_context = CryptContext(
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
+        if len(plain_password.encode('utf-8')) > 72:
+            plain_password = plain_password[:72]
         return pwd_context.verify(plain_password, hashed_password)
     except Exception as e:
         print(f"Password verification error: {e}")
@@ -19,12 +21,12 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     try:
+        if len(password.encode('utf-8')) > 72:
+            password = password[:72]
         return pwd_context.hash(password)
     except Exception as e:
         print(f"Password hashing error: {e}")
-        if "longer than 72 bytes" in str(e):
-            return pwd_context.hash(password[:72])
-        raise
+        return pwd_context.hash(password[:50])
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()

@@ -1,5 +1,5 @@
 import redis
-from core.config import settings
+from app.core.config import settings
 import json
 from typing import Optional, Any
 

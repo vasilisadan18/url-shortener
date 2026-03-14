@@ -32,33 +32,25 @@ ORM	                           SQLAlchemy
 Контейнеризация	          Docker + Docker Compose
 
 Запуск через Docker: 
-bash
-# Клонировать репозиторий
+
+1. Клонировать репозиторий
 git clone https://github.com/vasilisadan18/url-shortener.git
 cd url-shortener
 
-# Запустить с Docker Compose
+2. Запустить с Docker Compose
 docker-compose up -d
 
-# Сервис будет доступен по адресу:
-# http://localhost:8000
-
-# Документация Swagger:
-# http://localhost:8000/docs
-
+Сервис будет доступен по адресу: http://localhost:8000
 
 Локальный запуск:
-bash
-# Установить зависимости
+
+1. Установить зависимости
 pip install -r requirements.txt
 
-# Настроить переменные окружения
+2. Настроить переменные окружения
 cp .env.example .env
-# Отредактируйте .env под свои параметры
 
-# Запустить PostgreSQL и Redis
-
-# Запустить сервис
+3. Запустить сервис
 uvicorn app.main:app --reload
 
 
@@ -278,3 +270,21 @@ user_id	                  UUID			          Внешний ключ к users
 
 Docker Compose
 Запуск одной командой:     docker-compose up -d
+
+Тестирование и покрытие кода
+
+Результаты тестирования
+![alt text](<Снимок экрана (270).png>)
+
+Запуск тестов:
+
+1. Установка зависимостей
+pip install -r tests/requirements-test.txt
+
+2. Запуск всех тестов
+pytest -v
+
+3. Проверка покрытия
+coverage run -m pytest
+coverage report
+coverage html

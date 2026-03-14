@@ -2,19 +2,73 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from core.database import get_db
-from api.deps import get_current_user, get_optional_user
-from models.user import User
-from models.link import Link
-from schemas.link import (
+from app.core.database import get_db
+from app.api.deps import get_current_user, get_optional_user
+from app.models.user import User
+from app.models.link import Link
+from app.schemas.link import (
     LinkCreate, LinkResponse, LinkUpdate, 
     LinkStats, LinkSearchResult
 )
-from services.link_service import LinkService
-from core.config import settings
+from app.services.link_service import LinkService
+from app.core.config import settings
 from datetime import datetime
 
 router = APIRouter()
+
+@router.get("/search", response_model=List[LinkSearchResult])
+def search_links(
+    original_url: str = Query(..., description="Original URL to search for"),
+    db: Session = Depends(get_db)
+):
+    links = LinkService.search_by_original_url(db, original_url)
+    
+    results = []
+    for link in links:
+        results.append({
+            "short_code": link.short_code,
+            "short_url": f"{settings.BASE_URL}/{link.short_code}",
+            "original_url": link.original_url,
+            "created_at": link.created_at,
+            "clicks": link.clicks
+        })
+    
+    return results
+
+@router.get("/expired/history", response_model=List[LinkResponse])
+def get_expired_links_history(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    links = LinkService.get_expired_links_history(db)
+    user_links = [link for link in links if link.user_id == current_user.id]
+    
+    results = []
+    for link in user_links:
+        response_dict = {
+            "id": link.id,
+            "short_code": link.short_code,
+            "original_url": link.original_url,
+            "short_url": f"{settings.BASE_URL}/{link.short_code}",
+            "custom_alias": link.custom_alias,
+            "clicks": link.clicks,
+            "created_at": link.created_at,
+            "expires_at": link.expires_at,
+            "is_active": link.is_active
+        }
+        results.append(LinkResponse.model_validate(response_dict))
+    
+    return results
+
+@router.post("/cleanup/unused", status_code=status.HTTP_200_OK)
+def cleanup_unused_links(
+    days: int = Query(settings.DEFAULT_EXPIRY_DAYS, description="Days of inactivity"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Cleanup unused links"""
+    count = LinkService.cleanup_unused_links(db, days)
+    return {"message": f"Cleaned up {count} unused links"}
 
 @router.post("/shorten", response_model=LinkResponse, status_code=status.HTTP_201_CREATED)
 def create_short_link(
@@ -46,23 +100,6 @@ def create_short_link(
         
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    
-@router.get("/{short_code}")
-def redirect_to_original(
-    short_code: str,
-    db: Session = Depends(get_db)
-):
-    link = LinkService.get_link(db, short_code)
-    
-    if not link:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Link not found or expired"
-        )
-    
-    LinkService.record_click(db, link)
-    
-    return RedirectResponse(url=link.original_url)
 
 @router.get("/{short_code}/stats", response_model=LinkStats)
 def get_link_statistics(
@@ -101,10 +138,10 @@ def get_link_statistics(
 def update_link(
     short_code: str,
     link_update: LinkUpdate,
-    db: Session= Depends(get_db),
-    current_user: User= Depends(get_current_user)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    link= LinkService.get_link_stats(db, short_code)
+    link = LinkService.get_link_stats(db, short_code)
     
     if not link:
         raise HTTPException(
@@ -148,64 +185,19 @@ def delete_link(
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
-@router.get("/search", response_model=List[LinkSearchResult])
-def search_links(
-    original_url: str = Query(..., description="Original URL to search for"),
+@router.get("/{short_code}")
+def redirect_to_original(
+    short_code: str,
     db: Session = Depends(get_db)
 ):
-    try:
-        from sqlalchemy import or_
-        links = db.query(Link).filter(
-            Link.original_url.ilike(f"%{original_url}%"),
-            Link.is_active == True
-        ).all()
-        
-        results = []
-        for link in links:
-            results.append({
-                "short_code": link.short_code,
-                "short_url": f"{settings.BASE_URL}/{link.short_code}",
-                "original_url": link.original_url,
-                "created_at": link.created_at,
-                "clicks": link.clicks
-            })
-        
-        return results
-        
-    except Exception as e:
-        print(f"Search error: {e}")
-        return []
-
-@router.get("/expired/history", response_model=List[LinkResponse])
-def get_expired_links_history(
-    db: Session= Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    links= LinkService.get_expired_links_history(db)
-    user_links = [link for link in links if link.user_id == current_user.id]
+    link = LinkService.get_link(db, short_code)
     
-    results=[]
-    for link in user_links:
-        response_dict = {
-            "id": link.id,
-            "short_code": link.short_code,
-            "original_url": link.original_url,
-            "short_url": f"{settings.BASE_URL}/{link.short_code}",
-            "custom_alias": link.custom_alias,
-            "clicks": link.clicks,
-            "created_at": link.created_at,
-            "expires_at": link.expires_at,
-            "is_active": link.is_active
-        }
-        results.append(LinkResponse.model_validate(response_dict))
+    if not link:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Link not found or expired"
+        )
     
-    return results
-
-@router.post("/cleanup/unused", status_code=status.HTTP_200_OK)
-def cleanup_unused_links(
-    days: int = Query(settings.DEFAULT_EXPIRY_DAYS, description="Days of inactivity"),
-    db: Session= Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    count = LinkService.cleanup_unused_links(db, days)
-    return {"message": f"Cleaned up {count} unused links"}
+    LinkService.record_click(db, link)
+    
+    return RedirectResponse(url=link.original_url)

@@ -1,11 +1,11 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from core.config import settings
-from api.endpoints import links, users
-from core.database import engine, Base, get_db
+from app.core.config import settings
+from app.api.endpoints import links, users
+from app.core.database import engine, Base, get_db
 import threading
 from sqlalchemy.orm import Session 
-from services.cleanup_service import start_cleanup_scheduler
+from app.services.cleanup_service import start_cleanup_scheduler
 
 Base.metadata.create_all(bind=engine)
 
@@ -32,7 +32,7 @@ def root_redirect(
     db: Session = Depends(get_db)
 ):
     """Redirect from root path (e.g., /google-test)"""
-    from api.endpoints.links import redirect_to_original
+    from app.api.endpoints.links import redirect_to_original
     return redirect_to_original(short_code, db)
 
 @app.get("/")

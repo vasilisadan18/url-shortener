@@ -1,8 +1,8 @@
 import time
 import schedule
-from core.database import SessionLocal
-from services.link_service import LinkService
-from core.config import settings
+from app.core.database import SessionLocal
+from app.services.link_service import LinkService
+from app.core.config import settings
 import logging
 
 logging.basicConfig(level=logging.INFO)
