@@ -26,6 +26,10 @@ app.add_middleware(
 app.include_router(links.router, prefix=settings.API_V1_STR + "/links", tags=["links"])
 app.include_router(users.router, prefix=settings.API_V1_STR + "/users", tags=["users"])
 
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "service": "URL Shortener"}
+
 @app.get("/{short_code}")
 def root_redirect(
     short_code: str, 
@@ -44,9 +48,6 @@ def root():
         "status": "running"
     }
 
-@app.get("/health")
-def health_check():
-    return {"status": "healthy", "service": "URL Shortener"}
 
 @app.on_event("startup")
 def startup_event():
