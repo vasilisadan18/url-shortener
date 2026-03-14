@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "redis"
     REDIS_PORT: int= 6379
     REDIS_DB: int= 0
+    REDIS_PASSWORD: Optional[str] = None
     REDIS_URL: Optional[str] = None
 
     SECRET_KEY: str = "50b4ed23ba2dc93ea3a91a2e8fe935b24aacb6541939061a5cb80af4179c45ed"
@@ -34,5 +35,8 @@ class Settings(BaseSettings):
             self.DATABASE_URL= f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}/{self.POSTGRES_DB}"
         if not self.REDIS_URL:
             self.REDIS_URL = f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
-
+        if self.REDIS_URL:
+            print(f"Redis URL configured (with password hidden)")
+        else:
+            print(f"Redis host: {self.REDIS_HOST}:{self.REDIS_PORT}")
 settings= Settings()
